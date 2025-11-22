@@ -75,6 +75,8 @@
       scriptInterpreter: sudo
     - description: Testa Conexão com o BD
       exec: '"sudo mysql -e ''SELECT VERSION()''"'
+    - description: Nome da maquina
+      exec: '"sudo mysql -e ''SELECT @@hostname''"'
     keepgoing: false
     strategy: node-first
   user: devops
