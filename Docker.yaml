@@ -1,0 +1,62 @@
+- defaultTab: nodes
+  description: Instala Docker em maquinas Debian
+  executionEnabled: true
+  id: 34ce2c88-2fd6-4515-aafc-cf96e5886bca
+  loglevel: INFO
+  name: Docker
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'tags: docker'
+    filterExclude: 'distro: centos'
+  nodesSelectedByDefault: true
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - autoSecureInput: 'false'
+      description: Instla e configura o Docker
+      fileExtension: .pl
+      interpreterArgsQuoted: false
+      passSecureInput: 'false'
+      script: |-
+        #!/usr/bin/env perl
+
+        use strict;
+        use warnings;
+
+        my $needed = <<EOF;
+        {
+            "exec-opts": ["native.cgroupdriver=systemd"],
+            "log-driver": "json-file",
+            "log-opts": {
+                "max-size": "5m",
+                "max-file": "3"
+           }
+        }
+        EOF
+
+        my $exists = open my $daemon_json, '<', '/etc/docker/daemon.json';
+        my $found = $exists ? do { local $/; <$daemon_json> } : '';
+
+        if ($needed ne $found) {
+            system('apt-get', 'update');
+            system('apt-get', 'install', '-y', 'docker.io');
+            open(FH, '>', '/etc/docker/daemon.json') or die $!;
+            print FH $needed;
+            system('systemctl', 'restart', 'docker');
+        }
+      scriptInterpreter: sudo
+    - description: Verifica o status do Docker
+      exec: sudo docker system info
+    keepgoing: false
+    strategy: node-first
+  user: devops
+  uuid: 34ce2c88-2fd6-4515-aafc-cf96e5886bca
+

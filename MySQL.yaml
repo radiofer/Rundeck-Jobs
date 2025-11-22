@@ -1,0 +1,82 @@
+- defaultTab: nodes
+  description: Instala MySQL em maquinas debian ou centos
+  executionEnabled: true
+  id: 1fdea4ce-1e1e-4015-86eb-6625f4538a7b
+  loglevel: INFO
+  name: MySQL
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'tags: database'
+  nodesSelectedByDefault: true
+  notification:
+    onfailure:
+      plugin:
+        configuration:
+          botAuthToken: 8243572508:AAERE0UCm6C8oYL7bxLFpzVjQncrV-33qoA
+          chatId: '-5017189150'
+          includeJobLog: 'true'
+          telegramApiBaseUrl: https://api.telegram.org
+          telegramProperties: /etc/rundeck/telegram.properties
+          templateDir: /var/lib/rundeck/templates
+          templateMessage: |-
+            ${job.project}: ${job.name}
+            Status: ${status} (${context.job.execid})
+        type: TelegramNotification
+    onsuccess:
+      plugin:
+        configuration:
+          botAuthToken: 8243572508:AAERE0UCm6C8oYL7bxLFpzVjQncrV-33qoA
+          chatId: '-5017189150'
+          telegramApiBaseUrl: https://api.telegram.org
+          telegramProperties: /etc/rundeck/telegram.properties
+          templateDir: /var/lib/rundeck/templates
+          templateMessage: |-
+            ${job.project}: ${job.name}
+            Status: ${status} (${context.job.execid})
+        type: TelegramNotification
+  notifyAvgDurationThreshold: null
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - autoSecureInput: 'false'
+      description: Instalando MySQL
+      fileExtension: .sh
+      interpreterArgsQuoted: false
+      passSecureInput: 'false'
+      script: |+
+        #!/bin/bash
+
+        source /etc/os-release # ID = centos,debian, NAME
+
+        function _debian {
+            dpkg -l | grep mariadb-server > /dev/null
+            test $? -eq 0 && return
+            apt-get update && apt-get install -y mariadb-server
+        }
+
+        function _centos {
+            rpm -qa | grep mariadb-server > /dev/null
+            test $? -eq 0 && return
+            dnf install -y mariadb-server
+            systemctl start mariadb
+            systemctl enable mariadb
+        }
+
+        _$ID # executa _debian ou _centos
+
+      scriptInterpreter: sudo
+    - description: Testa Conexão com o BD
+      exec: '"sudo mysql -e ''SELECT VERSION()''"'
+    keepgoing: false
+    strategy: node-first
+  user: devops
+  uuid: 1fdea4ce-1e1e-4015-86eb-6625f4538a7b
+

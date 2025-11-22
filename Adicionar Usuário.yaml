@@ -1,0 +1,60 @@
+- defaultTab: nodes
+  description: Adiona usuario e sua chave ssh em todas VMs
+  executionEnabled: true
+  id: 8ffee437-cb2a-4cf4-be9d-63a86dfaaaf0
+  loglevel: INFO
+  name: Adicionar Usuário
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: true
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '5'
+    filter: .*
+  nodesSelectedByDefault: true
+  options:
+  - description: Nome do Usuário
+    label: Usuário
+    name: user
+    regex: '[-_a-z.]{2,}'
+    required: true
+  - description: Chave pública do SSH
+    label: Chave SSH
+    name: key
+    regex: 'ssh-ed25519 AAAA[0-9A-Za-z+/]+[=]{0,3} ([^@]+@[^@]+)'
+    required: true
+  plugins:
+    ExecutionLifecycle: {}
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - description: Adiciona usuário no sistema
+      errorhandler:
+        exec: getent passwd ${option.user}
+        keepgoingOnSuccess: true
+      exec: sudo useradd -m -d /home/${option.user} -s /bin/bash ${option.user}
+    - autoSecureInput: 'false'
+      fileExtension: .sh
+      interpreterArgsQuoted: false
+      passSecureInput: 'false'
+      script: |-
+        #!/bin/bash
+
+        su -c 'mkdir -p ~/.ssh' @option.user@
+
+        grep "@option.key@" /home/@option.user@/.ssh/authorized_keys > /dev/null
+
+        if [ $? != 0 ]; then
+        su -c 'echo "@option.key@" >> ~/.ssh/authorized_keys' @option.user@
+            echo 'Chave adicionada com sucesso!'
+        else
+            echo 'Chave já exite'
+        fi
+      scriptInterpreter: sudo
+    keepgoing: true
+    strategy: node-first
+  user: devops
+  uuid: 8ffee437-cb2a-4cf4-be9d-63a86dfaaaf0
+
